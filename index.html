@@ -1,0 +1,332 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>デュエル・アリーナ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e6ebf2;--panel:#d3dbe8;--ink:#12202f;--mut:#51627a;--card:#fff;--line:#9fb0c6;--sel:#12202f;--r:#d4452f;--b:#2f7fc4;--g:#3f9a52;--y:#d9a81e;--p:#7a4aa8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1826;--panel:#16263a;--ink:#e8eef6;--mut:#8fa3bd;--card:#223650;--line:#35506f;--sel:#fff}}
+:root[data-theme="dark"]{--bg:#0d1826;--panel:#16263a;--ink:#e8eef6;--mut:#8fa3bd;--card:#223650;--line:#35506f;--sel:#fff}
+html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New",sans-serif}
+#app{max-width:560px;margin:auto;padding:36px 8px 8px;display:flex;flex-direction:column;gap:6px}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mut);gap:8px}
+.row{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.sh u{width:16px;height:22px;border:2px solid var(--mut);border-radius:3px;background:var(--panel)}
+.mn u{width:13px;height:13px;border-radius:3px;display:inline-block}.mn u.t{opacity:.25}
+.r{--c:var(--r)}.b{--c:var(--b)}.g{--c:var(--g)}.y{--c:var(--y)}.p{--c:var(--p)}.mn u{background:var(--c)}
+.zone{min-height:152px;display:flex;gap:6px;flex-wrap:wrap;background:var(--panel);border-radius:8px;padding:6px;align-content:flex-start}
+.zone.hand{flex-wrap:nowrap;overflow-x:auto}
+.empty{font-size:11px;color:var(--mut);align-self:center;margin:auto}
+.card{flex:none;width:84px;height:146px;box-sizing:border-box;background:var(--card);border:2px solid var(--line);border-top:9px solid var(--c);border-radius:6px;padding:3px 4px;font-size:11px;position:relative;cursor:pointer;line-height:1.25;overflow:hidden}
+.card i{font-style:normal;font-weight:900;font-size:13px;margin-right:3px}.card b{font-weight:700}
+.card s{text-decoration:none;position:absolute;right:4px;bottom:2px;font-weight:900;font-size:12px}
+.card em{display:block;font-style:normal;font-size:9px;color:var(--mut);margin-top:2px}
+.card.tap{opacity:.5;transform:rotate(7deg)}.card.sel{outline:3px solid var(--sel);outline-offset:1px}
+#log{font-size:12px;min-height:44px;color:var(--mut)}
+.act{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:36px}
+button{font:inherit;font-weight:700;background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:9px 14px;cursor:pointer}
+button:disabled{opacity:.4}button:focus-visible{outline:3px solid var(--b);outline-offset:2px}small{color:var(--mut);font-size:11px}
+@keyframes pop{from{transform:scale(.6) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes hit{0%,100%{transform:none}25%{transform:translateX(-5px);background:var(--r)}75%{transform:translateX(5px)}}
+.card.in{animation:pop .28s ease-out}.sh.hit{animation:hit .35s}
+@media (prefers-reduced-motion:reduce){.card.in,.sh.hit{animation:none}}
+#snd{position:absolute;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;padding:5px 9px;font-size:12px;z-index:5}
+.card::after{content:attr(data-r);position:absolute;top:0;right:3px;font-size:9px;font-weight:900;color:var(--mut)}
+.card.qR,.card.qSR{border-color:#b8860b}.card.qR::after,.card.qSR::after{color:#b8860b}
+.card.qSR{box-shadow:0 0 8px #d9a81e}
+.gg{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.gc{--w:56px;--h:78px;--fs:9px;position:relative;perspective:600px;width:var(--w);height:var(--h);cursor:pointer}
+.gg.big .gc{--w:130px;--h:176px;--fs:13px}
+.gc>div{position:absolute;inset:0;backface-visibility:hidden;transition:transform .5s;border-radius:6px;box-sizing:border-box}
+.gb{background:repeating-linear-gradient(45deg,#1b2f4a,#1b2f4a 6px,#274468 6px,#274468 12px);border:2px solid var(--line)}
+.gi{transform:rotateY(180deg);background:var(--card);border:2px solid var(--line);border-top:8px solid var(--c);padding:3px;display:flex;flex-direction:column;font-size:var(--fs);line-height:1.25}
+.gc.open .gb{transform:rotateY(-180deg)}.gc.open .gi{transform:none}
+.gi b{position:absolute;top:1px;right:3px;font-size:calc(var(--fs) + 1px);color:var(--rc)}.gi strong{margin:auto 0}.gi small{align-self:flex-end;font-weight:900}
+.gi em{position:absolute;bottom:2px;left:3px;font-style:normal;font-size:calc(var(--fs) - 1px);background:var(--r);color:#fff;padding:0 3px;border-radius:3px}
+.gc.open .gi.qR{box-shadow:0 0 8px var(--rc)}.gc.open .gi.qSR{box-shadow:0 0 16px 3px var(--rc);animation:shimmer 1s infinite alternate}
+.orbw{text-align:center;padding:30px 0}.orb{width:90px;height:90px;border-radius:50%;margin:auto;background:radial-gradient(circle at 30% 30%,#fff,#6b7f99);animation:shake .15s infinite alternate}
+.orbw.pop .orb{animation:burst .5s forwards;background:radial-gradient(circle,#fff,var(--oc))}
+@keyframes shake{from{transform:translateX(-4px) rotate(-5deg)}to{transform:translateX(4px) rotate(5deg)}}
+@keyframes burst{from{transform:scale(1);opacity:1}to{transform:scale(3.4);opacity:0}}
+@keyframes shimmer{from{filter:brightness(1)}to{filter:brightness(1.3)}}
+@media (prefers-reduced-motion:reduce){.orb,.gi.qSR{animation:none!important}.gc>div{transition:none}}
+.art{display:block;width:100%;height:40px;border-radius:3px;margin:2px 0}.gi .art{height:auto}
+#modal{position:fixed;inset:0;background:rgba(5,10,20,.7);display:none;align-items:center;justify-content:center;padding:20px}
+#modal div{background:var(--bg);border-radius:12px;padding:18px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:10px}
+#modal h2{margin:0;font-size:16px;line-height:1.4}#modal p{margin:0;font-size:12px;color:var(--mut)}
+</style></head><body><div id="app"></div><button id="snd" aria-label="効果音">♪ ON</button><div id="modal"><div></div></div>
+<script>
+const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const CN={r:'火',b:'水',g:'自然',y:'光',p:'闇'};
+const RAW=[
+['r','c','ヒノコ',1,1500,'',null],['r','c','ホムラ兵',2,2500,'',null],['r','c','烈火の剣士',3,3500,'',null],['r','c','紅蓮の竜騎',5,5500,'d',null],['r','s','バーンショット',2,0,'s',{kill:2000}],['r','s','爆炎の雨',4,0,'',{kill:4000}],
+['b','c','ミズクラゲ',2,2000,'',{draw:1}],['b','c','青の探求者',3,3000,'',{draw:1}],['b','c','海底の番人',4,4000,'b',null],['b','c','大渦の主',6,7000,'d',{bounce:1}],['b','s','ウェーブ',3,0,'',{draw:2}],['b','s','フリーズ・ミスト',3,0,'s',{tap:1}],
+['g','c','若葉の精',1,1000,'',{ramp:1}],['g','c','森の守り手',3,2500,'b',null],['g','c','大樹の獣',4,4500,'',null],['g','c','太古の巨獣',7,8500,'d',null],['g','s','芽吹き',2,0,'',{ramp:2}],['g','s','大地の恵み',3,0,'s',{ramp:1,shield:1}],
+['y','c','灯の見習い',2,2500,'b',null],['y','c','聖盾兵',3,2500,'bs',null],['y','c','光の騎士',4,4500,'',null],['y','c','天空の守護龍',6,6500,'bd',null],['y','s','ホーリーウォール',2,0,'s',{shield:1}],['y','s','裁きの光',3,0,'s',{tap:1}],
+['p','c','影ネズミ',1,1000,'',null],['p','c','闇の剣闘士',3,3000,'',{kill:1000}],['p','c','魔王の使い',5,4000,'',{kill:3000}],['p','c','冥府の覇者',7,8000,'d',null],['p','s','デス・ブロー',3,0,'s',{kill:3000}],['p','s','闇の取引',2,0,'',{draw:1,ramp:1}],
+['r','c','ドラゴン・ブレイズ',4,6500,'ed',null],['b','c','蒼海の覇王',5,8000,'e',{bounce:1}],['g','c','大地の化身',6,7500,'ed',null],['y','c','聖光の大天使',5,6500,'eb',null],['p','c','冥界の将軍',5,7000,'e',{kill:4000}],
+['r','c','ミニ・ヴォルケーノ',2,2500,'h',null],['r','c','燃え尽きる狼',3,3500,'',null,{draw:1}],
+['b','c','予知の水精',2,2000,'',null,null,{draw:1}],['b','c','深海の殉教者',4,4000,'',null,{shield:1}],
+['g','c','実りの樹精',3,1500,'',null,null,{ramp:1}],['g','c','苔むす古木',5,5500,'',null,{ramp:2}],
+['y','c','閃光の剣士',3,3500,'h',null],['y','c','夜明けの聖女',4,3500,'b',null,{shield:1}],
+['p','c','屍の兵士',2,2000,'',null,{draw:1}],['p','c','暗殺者カゲマル',4,4000,'',null,null,{kill:2000}],
+['r','c','灼熱の暴君ガルド',6,7500,'dk',null],['r','c','火花の斥候',2,1500,'hk',null],
+['b','c','深淵の魔導士',4,3000,'',{disc:1}],['b','s','記憶の潮',3,0,'',{draw:1,disc:1}],
+['g','c','大地の番犬',3,2500,'bk',null],['g','s','緑の暴走',4,0,'',{ramp:2,draw:1}],
+['y','c','光の裁定者',6,5500,'bd',{tap:1}],['y','s','安息の鐘',4,0,'',{shield:2}],
+['p','s','虚無の宣告',5,0,'',{kill:6000,mburn:1}],['p','c','亡霊の暗殺者',3,2000,'k',null],
+['r','c','炎帝ヴォルカン',7,9500,'tk',null],['r','c','怒りの突撃兵',3,2500,'',null,null,null,3000],
+['b','c','大海の賢者',5,5000,'',{draw:2}],['b','s','大津波',5,0,'',{wipe:4000}],
+['g','c','森の戦士長',4,2500,'',null,null,null,3000],['g','s','精霊の祝福',3,0,'s',{ramp:1,draw:1}],
+['y','s','苿りの光',4,0,'',{rev:1,shield:1}],['y','c','白銀の守護者',5,5500,'b',null,{shield:1}],
+['p','c','地獄の覇王',8,10000,'tk',{kill:5000}],['p','s','呪われた墓所',3,0,'',{rev:1,disc:1}],
+['r','s','焦熱の号砏',3,0,'',{sbreak:1}],['r','s','炎の鼓舞',2,0,'',{buff:2000}],
+['b','s','時の逆流',4,0,'',{untap:1,draw:1}],['b','c','凍える魔女',3,3000,'',{tap:1}],
+['g','s','野生の哆哮',3,0,'',{buff:3000,ramp:1}],['g','c','巨木の守護者',6,7500,'bk',null],
+['y','s','聖なる剣の舞',3,0,'',{buff:2000,untap:1}],['y','c','光の弓兵',3,2500,'',null,null,{kill:1000}],
+['p','s','血の契約',4,0,'',{sbreak:1,draw:1}],['p','c','闇の侍従',2,1000,'',null,{ramp:1}],
+['r','c','爆炎の継承者',3,4500,'e',null],['r','c','竜皇ヴァーミリオン',8,12500,'edt',{kill:6000}],
+['b','c','深海の呼び声',4,6000,'e',{draw:2}],['b','c','大賢者ミナト',6,7000,'ed',{bounce:1,draw:1}],
+['g','c','森羅の巨人',7,9500,'edk',null],['g','c','妖精王オベロン',4,2500,'e',{ramp:2}],
+['y','c','聖騎士団長',5,6500,'ed',null],['y','c','守護天使の翼',6,5500,'eb',{shield:1}],
+['p','c','魔神ベルゼ',6,9000,'ed',{kill:4000}],['p','c','影の刃',3,3000,'ek',null],
+['r','c','紅蓮の不死鳥',5,5500,'r',null],['r','s','炎の呪縛',3,0,'s',{weak:2000}],
+['b','c','幻影の盗賊',3,3000,'u',{steal:1}],['b','s','時空の渦',4,0,'',{mill:3,draw:1}],
+['g','s','蔦の呪縛',3,0,'s',{weak:3000,ramp:1}],['g','c','荒野の疾風',4,3500,'u',null],
+['y','c','光の守り神',5,4500,'br',null],['y','s','聖なる審判',5,0,'s',{weak:3000,tap:1}],
+['p','c','死霊術師',4,3000,'',{rev:1}],['p','c','影の略奪者',5,3000,'u',null,null,{sbreak:1}],
+['r','c','連撃の剣豪',4,3500,'2',null],['r','c','軍団の長',3,1500,'',null,null,null,null,{k:'bz',v:1000}],
+['b','c','氷結の術師',3,3000,'',{freeze:1}],['b','c','潮流の導き手',4,3000,'',null,null,null,null,null,1],
+['g','c','群れの王',5,1500,'',null,null,null,null,{k:'bz',v:1500}],['g','s','根の拘束',2,0,'s',{freeze:1}],
+['y','c','聖槍の騎士',4,3500,'2',null],['y','s','審判の断罪',3,0,'',{killt:5000}],
+['p','c','亡者の将',4,2000,'',null,null,null,null,{k:'gy',v:1000}],['p','c','背水の魔剣士',3,2000,'',null,null,null,null,{k:'low',v:1000}],
+['r','c','炎の暴君ベルガ',6,6500,'n',null],['r','s','燃える種火',2,0,'m',{kill:1000}],
+['b','c','夜更かしの学者',4,3000,'',null,null,null,null,null,null,{draw:1}],['b','s','潮の満ち引き',3,0,'',{mret:1,draw:2}],
+['g','c','大地の繁殖者',3,1500,'',null,null,null,null,null,null,{ramp:1}],['g','s','森の召喚術',4,0,'',{cheat:5}],
+['y','c','光の巡礼者',4,2500,'',null,null,null,null,null,null,{shield:1}],['y','s','聖なる光脈',2,0,'m',{shield:1}],
+['p','c','死の使者',4,3000,'',null,null,null,null,null,null,{disc:1}],['p','s','魔界の召喚',5,0,'',{cheat:7}],
+['r','c','烈火の守護者',4,4500,'v',null],['r','s','蘇る炎の巨兵',5,0,'',{reani:5}],
+['b','c','大海の守護者',5,5000,'b',null,null,null,null,null,null,null,{draw:1}],['b','c','潮風の幻術師',3,3000,'z',null],
+['g','c','不屈の巨木',6,6500,'bi',null],['g','c','芽吹きの園',4,1500,'',null,null,null,null,null,null,null,null,{ramp:1}],
+['y','c','聖域の番人',3,2500,'v',null],['y','c','朝を告げる者',4,3500,'',null,null,null,null,null,null,null,null,{draw:1}],
+['p','c','追い詰められた狂戦士',3,1000,'',null,null,null,null,{k:'hand',v:2000}],['p','c','墓荒らし',4,3000,'',{reani:3}],
+['r','s','炎の連唱',4,0,'w',{kill:2000}],['r','c','戦場の狂犬',3,3500,'',null,null,null,null,null,null,null,null,null,{draw:1}],
+['b','s','知識の探求',3,0,'',{dig:4}],['b','s','水鏡の双子',5,0,'w',{bounce:1}],
+['g','s','緑の贄',2,0,'',{sac:1,ramp:3}],['g','c','森の賢獣',4,2500,'',{dig:3}],
+['y','c','光の探求者',3,2500,'',{dig:3}],['y','c','勝利の聖剣士',4,4500,'',null,null,null,null,null,null,null,null,null,{shield:1}],
+['p','s','血の供物',3,0,'',{sac:1,kill:6000}],['p','c','屍喰らいの魔獣',5,5000,'',null,null,null,null,null,null,null,null,null,{draw:1}],
+['r','c','焦龍帝ガイアス',9,13500,'q',null],['r','s','怒涛の進撃',3,0,'',{nb:1,buff:2000}],
+['b','s','氷河の呪縛',3,0,'s',{lock:1}],['b','s','知恵の泉',2,0,'',{loot:2}],
+['g','c','大樹の砂',5,2500,'b',null,null,null,null,{k:'sh',v:1000}],['g','c','野生の封鎖',4,3500,'',{nb:1}],
+['y','c','白き城壁の主',6,3500,'',null,null,null,null,{k:'sh',v:1500}],['y','s','聖なる柷',3,0,'s',{lock:1,shield:1}],
+['p','c','呪詛の死神',5,4000,'',null,{disc:2}],['p','s','虚空の鎖',4,0,'',{lock:1,kill:3000}],
+['r','s','炎の再燃',2,0,'',{refresh:1}],['r','c','灼熱の徴税官',3,2500,'',null,null,null,null,null,null,null,null,null,null,1],
+['b','s','時の大魔法',8,0,'',{xt:1}],['b','s','手札の洗濯',3,0,'',{wheel:1}],
+['g','s','森の再生',3,0,'',{refresh:1,ramp:1}],['g','c','森の徴税者',4,3500,'',null,null,null,null,null,null,null,null,null,null,1],
+['y','s','聖なる入替',2,0,'s',{sswap:1}],['y','s','天の采配',4,0,'',{sswap:1,draw:1}],
+['p','c','虚無の徴税官',4,3000,'',null,null,null,null,null,null,null,null,null,null,1],['p','s','破滅の手札交換',4,0,'',{wheel:1,mill:2}],
+['r','c','紅蓮の将軍',5,4500,'',null,null,null,null,null,null,null,null,null,null,null,null,1000],['r','c','業火の特攻兵',3,2500,'',null,null,null,null,null,null,null,null,null,null,null,3000],
+['b','s','再演の魔術師',3,0,'',{rec:1,draw:1}],['b','c','潮の司祭',4,4000,'',null,null,null,null,null,null,null,null,{grow:1000}],
+['g','c','成長する若木',2,1000,'',null,null,null,null,null,null,null,null,{grow:1000}],['g','c','森の長老',5,3500,'',null,null,null,null,null,null,null,null,null,null,null,null,1000],
+['y','c','貫く聖槍兵',4,3500,'',null,null,null,null,null,null,null,null,null,{sbreak:1}],['y','s','輝きの転生',2,0,'',{rec:1,shield:1}],
+['p','c','怨念の亡霊',3,2000,'',null,null,null,null,null,null,null,null,null,null,null,4000],['p','c','闇の破城槌',5,5000,'',null,null,null,null,null,null,null,null,null,{sbreak:1}]
+].map(a=>({civ:a[0],type:a[1],name:a[2],cost:a[3],pow:a[4],fl:a[5],fx:a[6],die:a[7],atk:a[8],pa:a[9],sc:a[10],cr:a[11],eot:a[12],blkfx:a[13],sot:a[14],winfx:a[15],tx:a[16],dk:a[17],aura:a[18]}));
+const PAIRS=[['r','g'],['b','y'],['p','r'],['g','b'],['y','p']];
+let G,busy=false,sel=null,logs=[],uid=0,seen=new Set(),snd=true,AC,own,coins,diff=1;
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function init(){own=LS.get('col',null);if(own&&own.length<RAW.length){own=[...own,...Array(RAW.length-own.length).fill(0)];LS.set('col',own)}if(!own||own.length!=RAW.length){own=RAW.map(()=>0);for(let n=0;n<20;n++)own[Math.random()*RAW.length|0]++;LS.set('col',own)}coins=LS.get('coins',1000)}
+function addCoins(n){coins+=n;LS.set('coins',coins)}
+const rar=c=>c.cost>=6?'SR':c.cost>=4?'R':c.cost==3?'U':'C';
+function roll(){const x=Math.random()*100,r=x<50?'C':x<78?'U':x<95?'R':'SR',pool=RAW.map((c,i)=>i).filter(i=>rar(RAW[i])==r);return pool[Math.random()*pool.length|0]}
+function gacha(){return new Promise(res=>{const m=$('#modal'),box=m.firstElementChild,RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+ const RC={C:'#8fa3bd',U:'#3f9a52',R:'#2f7fc4',SR:'#d9a81e'},RK={C:0,U:1,R:2,SR:3};let out=[],opened=0,lock=false;box.style.maxWidth='420px';
+ const btns=()=>`<button data-n="1" ${coins<100?'disabled':''}>1回 (100)</button><button data-n="10" ${coins<900?'disabled':''}>10連 (900)</button><button data-n="0">戻る</button>`;
+ const menu=()=>{box.innerHTML=`<h2>カードガチャ</h2><p>所持コイン: ${coins}（勝利+150 / 敗北+50）<br>排出率 C50% U28% R17% SR5%。10連はR以上1枚確定。</p>`+btns()};
+ const face=([i,nw],k)=>{const c=RAW[i],r=rar(c);return `<div class="gc" data-k="${k}"><div class="gi ${c.civ} q${r}" style="--rc:${RC[r]}"><b>${r}</b><span>${CN[c.civ]} ${c.cost}</span>${art(c)}<strong>${c.name}</strong><small>${c.type=='c'?c.pow:'呪文'}</small>${nw?'<em>NEW</em>':''}</div><div class="gb" style="box-shadow:0 0 ${r=='SR'?14:r=='R'?7:0}px ${RC[r]}"></div></div>`};
+ const openOne=k=>{const el=box.querySelector(`.gc[data-k="${k}"]`);if(!el||el.classList.contains('open'))return;el.classList.add('open');opened++;const r=rar(RAW[out[k][0]]);
+  if(r=='SR')[880,1100,1320].forEach((f,j)=>setTimeout(()=>sfx(f,.3,'triangle',.07),j*110));else sfx(r=='R'?760:r=='U'?520:400,.15,'triangle');
+  if(opened==out.length){const t=box.querySelector('#gctl');if(t)t.innerHTML=btns()}};
+ const orb=best=>new Promise(r=>{box.innerHTML=`<div class="orbw"><div class="orb" style="--oc:${RC[best]}"></div><p>…</p></div>`;sfx(180,.5,'sine',.06);
+  setTimeout(()=>{sfx(best=='SR'?1100:best=='R'?800:600,.35,'triangle');box.firstElementChild.classList.add('pop');setTimeout(r,RM?100:500)},RM?400:1400)});
+ const pull=async n=>{if(lock)return;lock=true;addCoins(-(n==1?100:900));out=[];opened=0;
+  for(let k=0;k<n;k++){let i=roll();if(n==10&&k==9&&!out.some(([j])=>RK[rar(RAW[j])]>=2))while(RK[rar(RAW[i])]<2)i=roll();out.push([i,own[i]==0]);own[i]++}
+  LS.set('col',own);const best=out.reduce((a,[i])=>RK[rar(RAW[i])]>RK[a]?rar(RAW[i]):a,'C');
+  await orb(best);box.innerHTML=`<h2>${n==1?'結果':'10連結果'}</h2><div class="gg${n==1?' big':''}">${out.map(face).join('')}</div><div id="gctl" class="row" style="margin-top:10px">${n==1?'':'<button data-all="1">すべてめくる</button>'}</div>`;lock=false;
+  if(n==1)setTimeout(()=>openOne(0),400)};
+ box.onclick=e=>{const b=e.target.closest('button'),c=e.target.closest('.gc');
+  if(c){openOne(+c.dataset.k);return}if(!b||b.disabled)return;
+  if(b.dataset.all){out.forEach((_,k)=>setTimeout(()=>openOne(k),k*130));b.remove();return}
+  const n=+b.dataset.n;if(!n){box.style.maxWidth='';m.style.display='none';res();return}pull(n)};
+ m.style.display='flex';menu()})}
+function gachaOld(){return new Promise(res=>{const m=$('#modal'),box=m.firstElementChild;let last=[];
+ const paint=()=>{box.innerHTML=`<h2>カードガチャ</h2><p>所持コイン: ${coins}（勝利+150 / 敗北+50）<br>排出率 C50% U28% R17% SR5%。10連はR以上1枚確定。</p>`+(last.length?`<div style="max-height:40vh;overflow:auto;font-size:12px">${last.map(([i,nw])=>`<div class="row ${RAW[i].civ}" style="border-left:6px solid var(--c);padding-left:6px;margin:2px 0"><b style="${rar(RAW[i])=='SR'?'color:#b8860b':''}">${rar(RAW[i])}</b>&nbsp;${CN[RAW[i].civ]} ${RAW[i].name}${nw?' <b>NEW</b>':''}</div>`).join('')}</div>`:'')+`<button data-n="1" ${coins<100?'disabled':''}>1回 (100)</button><button data-n="10" ${coins<900?'disabled':''}>10連 (900)</button><button data-n="0">戻る</button>`};
+ box.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const n=+b.dataset.n;if(!n){m.style.display='none';res();return}
+  addCoins(-(n==1?100:900));last=[];for(let k=0;k<n;k++){let i=roll();if(n==10&&k==9&&!last.some(([j])=>rar(RAW[j])=='R'||rar(RAW[j])=='SR')){while(rar(RAW[i])=='C'||rar(RAW[i])=='U')i=roll()}last.push([i,own[i]==0]);own[i]++}
+  LS.set('col',own);sfx(last.some(([j])=>rar(RAW[j])=='SR')?990:660,.25,'triangle');paint()};
+ m.style.display='flex';paint()})}
+function sfx(f,d=.12,t='square',v=.05){if(!snd)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d)}catch(e){}}
+function hit(d){const e=document.querySelectorAll('.sh')[d?0:1];if(e)e.classList.add('hit')}
+$('#snd').onclick=e=>{snd=!snd;e.target.textContent=snd?'♪ ON':'♪ OFF'};
+const who=i=>i?'相手':'あなた',log=t=>{logs.push(t);if(logs.length>3)logs.shift()};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function mkP(pair,cnt){const d=[];const add=c=>d.push({...c,id:++uid,tapped:false,sick:false});if(cnt)RAW.forEach((c,i)=>{for(let n=0;n<cnt[i];n++)add(c)});else{const pl=RAW.filter(c=>pair.includes(c.civ));for(let k=0;d.length<40;k++)add(pl[k%pl.length])}shuffle(d);
+ const p={deck:d,hand:[],shields:[],mana:[],bz:[],gy:[],charged:false};for(let i=0;i<5;i++){p.shields.push(p.deck.pop());p.hand.push(p.deck.pop())}return p}
+function ask(t,opts,sub){return new Promise(res=>{const m=$('#modal');m.firstElementChild.innerHTML=`<h2>${t}</h2>${sub?`<p>${sub}</p>`:''}`+opts.map((o,i)=>`<button data-i="${i}">${o}</button>`).join('');m.style.display='flex';
+ m.firstElementChild.onclick=e=>{const b=e.target.closest('button');if(!b)return;m.style.display='none';res(+b.dataset.i)}})}
+function fxText(c){const g=(f,p)=>f?p+fxText0({fx:f,type:'s'}):'';return[c.fx?fxText0(c):'',g(c.die,'破壊時:'),g(c.atk,'攻撃時:'),c.pa?'攻撃中パワー+'+c.pa:'',c.sc?({bz:'他の自分のクリーチャー1体につき',gy:'墓地のカード2枚につき',low:'シールドが減るごとに',hand:'手札が5枚より1枚少ないごとに',sh:'自分のシールド1枚につき'}[c.sc.k])+'パワー+'+c.sc.v:'',c.cr?'自分のクリーチャーの召喚コスト-'+c.cr:'',c.eot?'ターン終了時:'+fxText0({fx:c.eot,type:'s'}):'',c.sot?'ターン開始時:'+fxText0({fx:c.sot,type:'s'}):'',c.blkfx?'ブロック時:'+fxText0({fx:c.blkfx,type:'s'}):'',c.winfx?'戦闘勝利時:'+fxText0({fx:c.winfx,type:'s'}):'',c.tx?'相手の呪文のコスト+'+c.tx:'',c.dk?'破壊されたとき、相手のパワー'+c.dk+'以下を1体破壊':'',c.aura?'他の自分のクリーチャーのパワー+'+c.aura:''].filter(Boolean).join(' ')}
+function fxText0(c){const f=c.fx;if(!f)return'';const t=[];if(f.draw)t.push(f.draw+'枚引く');if(f.kill)t.push('パワー'+f.kill+'以下を破壊');if(f.bounce)t.push('相手の最強を手札へ');if(f.ramp)t.push('マナ+'+f.ramp);if(f.tap)t.push('相手を全タップ');if(f.disc)t.push('相手の手札を'+f.disc+'枚ランダムに捨てる');if(f.mburn)t.push('相手のマナを'+f.mburn+'枚墓地へ');if(f.wipe)t.push('パワー'+f.wipe+'以下のクリーチャーを全員破壊');if(f.rev)t.push('墓地のクリーチャー1体を手札へ');if(f.sbreak)t.push('相手のシールドを'+f.sbreak+'枚ブレイク');if(f.buff)t.push('自分の全クリーチャーのパワー+'+f.buff+'(次の自分のターンまで)');if(f.untap)t.push('自分のクリーチャーを全てアンタップ');if(f.rec)t.push('自分のクリーチャー1体を手札に戻す');if(f.grow)t.push('パワー+'+f.grow+'(永続)');if(f.refresh)t.push('自分のマナを全てアンタップ');if(f.wheel)t.push('お互いの手札を全て捨て、同じ枚数引く');if(f.sswap)t.push('手札1枚とシールド1枚を入れ替える');if(f.xt)t.push('このターンの後、もう1ターン行う');if(f.nb)t.push('このターン、相手のブロッカーはブロックできない');if(f.lock)t.push('相手のクリーチャー1体をタップし、次のターン起きない');if(f.loot)t.push(f.loot+'枚引い1枚捨てる');if(f.dig)t.push('山札の上'+f.dig+'枚から1枚を手札へ(残りは墓地)');if(f.sac)t.push('自分のクリーチャーを1体破壊');if(f.reani)t.push('コスト'+f.reani+'以下のクリーチャーを墓地から出す');if(f.mret)t.push('マナを'+f.mret+'枚手札に戻す');if(f.cheat)t.push('コスト'+f.cheat+'以下のクリーチャーを手札から出す');if(f.freeze)t.push('相手のクリーチャー1体をタップ');if(f.killt)t.push('タップ中の相手のパワー'+f.killt+'以下を破壊');if(f.steal)t.push('相手の手札を'+f.steal+'枚ランダムに奪う');if(f.mill)t.push('相手の山札を'+f.mill+'枚墓地へ');if(f.weak)t.push('相手の全クリーチャーのパワー-'+f.weak+'(次の相手のターンまで)');if(f.shield)t.push('シールド+1');return(c.type=='c'?'出た時:':'')+t.join('、')}
+function tags(c){return[RACE[c.name]?'['+RACE[c.name]+']':'',c.fl.includes('e')?'進化('+evN(c)+')':'',c.fl.includes('b')?'ブロッカー':'',c.fl.includes('q')?'Q・ブレイカー':c.fl.includes('t')?'T・ブレイカー':c.fl.includes('d')?'W・ブレイカー':'',c.fl.includes('s')?'S・トリガー':'',c.fl.includes('h')?'スピードアタッカー':'',c.fl.includes('k')?'スレイヤー':'',c.fl.includes('u')?'ブロックされない':'',c.fl.includes('r')?'破壊時手札へ':'',c.fl.includes('2')?'ダブルアタック':'',c.fl.includes('n')?'S・トリガー封じ':'',c.fl.includes('m')?'チャージャー(マナへ)':'',c.fl.includes('v')?'シールドセーバー':'',c.fl.includes('z')?'攻撃されない':'',c.fl.includes('i')?'効果耐性':'',c.fl.includes('w')?'ダブルキャスト':''].filter(Boolean).join(' ')}
+const RACE=Object.fromEntries('ヒノコ:ドラゴン,ホムラ兵:ソルジャー,烈火の剣士:ソルジャー,紅蓮の竜騎:ドラゴン,ドラゴン・ブレイズ:ドラゴン,ミニ・ヴォルケーノ:ドラゴン,燃え尽きる狼:ビースト,灼熱の暴君ガルド:ドラゴン,火花の斥候:ソルジャー,炎帝ヴォルカン:ドラゴン,怒りの突撃兵:ソルジャー,ミズクラゲ:クラゲ,青の探求者:マジシャン,海底の番人:マーメイド,大渦の主:マーメイド,蒼海の覇王:マーメイド,予知の水精:マーメイド,深海の殉教者:クラゲ,深淵の魔導士:マジシャン,大海の賢者:マジシャン,凍える魔女:マジシャン,若葉の精:フェアリー,森の守り手:ビースト,大樹の獣:ビースト,太古の巨獣:ビースト,大地の化身:ビースト,実りの樹精:フェアリー,苔むす古木:ツリー,大地の番犬:ビースト,森の戦士長:ビースト,巨木の守護者:ツリー,灯の見習い:エンジェル,聖盾兵:ガーディアン,光の騎士:ナイト,天空の守護龍:ドラゴン,聖光の大天使:エンジェル,閃光の剣士:ナイト,夜明けの聖女:エンジェル,光の裁定者:エンジェル,白銀の守護者:ガーディアン,光の弓兵:ナイト,影ネズミ:ビースト,闇の剣闘士:ソルジャー,魔王の使い:デーモン,冥府の覇者:デーモン,冥界の将軍:ゾンビ,屍の兵士:ゾンビ,暗殺者カゲマル:ニンジャ,亡霊の暗殺者:ゾンビ,地獄の覇王:デーモン,闇の侍従:ゾンビ,爆炎の継承者:ソルジャー,竜皇ヴァーミリオン:ドラゴン,深海の呼び声:クラゲ,大賢者ミナト:マジシャン,森羅の巨人:ツリー,妖精王オベロン:フェアリー,聖騎士団長:ナイト,守護天使の翼:ガーディアン,魔神ベルゼ:デーモン,影の刃:ニンジャ,紅蓮の不死鳥:ドラゴン,幻影の盗賊:ニンジャ,荒野の疾風:ビースト,光の守り神:ガーディアン,死霊術師:ゾンビ,影の略奪者:ニンジャ,連撃の剣豪:ソルジャー,軍団の長:ソルジャー,氷結の術師:マジシャン,潮流の導き手:マーメイド,群れの王:ビースト,聖槍の騎士:ナイト,亡者の将:ゾンビ,背水の魔剣士:ソルジャー,炎の暴君ベルガ:ドラゴン,夜更かしの学者:マジシャン,大地の繁殖者:フェアリー,光の巡礼者:エンジェル,死の使者:デーモン,烈火の守護者:ソルジャー,大海の守護者:マーメイド,潮風の幻術師:マジシャン,不屈の巨木:ツリー,芽吹きの園:フェアリー,聖域の番人:ガーディアン,朝を告げる者:エンジェル,追い詰められた狂戦士:デーモン,墓荒らし:ゾンビ,戦場の狂犬:ビースト,森の賢獣:ビースト,光の探求者:エンジェル,勝利の聖剣士:ナイト,屍喰らいの魔獣:ビースト,焦龍帝ガイアス:ドラゴン,大樹の砂:ツリー,野生の封鎖:ビースト,白き城壁の主:ガーディアン,呪詛の死神:デーモン,灼熱の徴税官:ソルジャー,森の徴税者:ビースト,虚無の徴税官:デーモン,紅蓮の将軍:ソルジャー,業火の特攻兵:ソルジャー,潮の司祭:マーメイド,成長する若木:ツリー,森の長老:フェアリー,貫く聖槍兵:ナイト,怨念の亡霊:ゾンビ,闇の破城槌:デーモン'.split(',').map(s=>s.split(':')));
+const EV={'ドラゴン・ブレイズ':'ドラゴン','蒼海の覇王':'マーメイド','大地の化身':'ビースト','聖光の大天使':'エンジェル','冥界の将軍':'ゾンビ','爆炎の継承者':'*','竜皇ヴァーミリオン':'ドラゴン','深海の呼び声':'クラゲ','大賢者ミナト':'マジシャン','森羅の巨人':'ツリー','妖精王オベロン':'フェアリー','聖騎士団長':'ナイト','守護天使の翼':'*','魔神ベルゼ':'デーモン','影の刃':'ビースト'};
+const evN=c=>EV[c.name]=='*'?'同文明':EV[c.name];
+const PAL={r:['#4a1710','#e0603f'],b:['#0f2d4f','#4aa0e0'],g:['#143d1f','#5fc070'],y:['#5a4300','#f0cc50'],p:['#2a1240','#a46fd6']};
+const AM=Object.fromEntries('ヒノコ:fl,ホムラ兵:sw,烈火の剣士:sw,紅蓮の竜騎:dr,バーンショット:bo,爆炎の雨:st,ドラゴン・ブレイズ:dr,ミニ・ヴォルケーノ:fl,燃え尽きる狼:cl,灼熱の暴君ガルド:cr,火花の斥候:bo,炎帝ヴォルカン:dr,怒りの突撃兵:sw,焦熱の号砏:bo,炎の鼓舞:fl,ミズクラゲ:jf,青の探求者:ey,海底の番人:sh,大渦の主:sp,ウェーブ:wv,フリーズ・ミスト:st,蒼海の覇王:cr,予知の水精:ey,深海の殉教者:jf,深淵の魔導士:or,記憶の潮:wv,大海の賢者:bk,大津波:wv,時の逆流:hg,凍える魔女:st,若葉の精:lf,森の守り手:sh,大樹の獣:cl,太古の巨獣:cl,芽吹き:lf,大地の恵み:tr,大地の化身:tr,実りの樹精:lf,苔むす古木:tr,大地の番犬:cl,緑の暴走:sp,精霊の祝福:or,森の戦士長:sw,野生の哆哮:cl,巨木の守護者:tr,灯の見習い:sn,聖盾兵:sh,光の騎士:sw,天空の守護龍:dr,ホーリーウォール:tw,裁きの光:sn,聖光の大天使:an,閃光の剣士:sw,夜明けの聖女:an,光の裁定者:ey,安息の鐘:st,苿りの光:an,白銀の守護者:sh,聖なる剣の舞:sw,光の弓兵:ar,影ネズミ:cl,闇の剣闘士:sw,魔王の使い:cr,冥府の覇者:sk,デス・ブロー:sk,闇の取引:bk,冥界の将軍:cr,屍の兵士:cf,暗殺者カゲマル:ar,亡霊の暗殺者:sk,虚無の宣告:or,地獄の覇王:dr,呪われた墓所:cf,血の契約:bk,闇の侍従:cf,爆炎の継承者:fl,竜皇ヴァーミリオン:dr,深海の呼び声:jf,大賢者ミナト:bk,森羅の巨人:tr,妖精王オベロン:lf,聖騎士団長:sw,守護天使の翼:an,魔神ベルゼ:cr,影の刃:sw,紅蓮の不死鳥:fl,炎の呪縛:sp,幻影の盗賊:ey,時空の渦:sp,蔦の呪縛:lf,荒野の疾風:cl,光の守り神:sh,聖なる審判:sn,死霊術師:bk,影の略奪者:ar,連撃の剣豪:sw,軍団の長:cr,氷結の術師:st,潮流の導き手:wv,群れの王:cl,根の拘束:lf,聖槍の騎士:sw,審判の断罪:bo,亡者の将:cr,背水の魔剣士:sw,炎の暴君ベルガ:dr,燃える種火:fl,夜更かしの学者:bk,潮の満ち引き:wv,大地の繁殖者:lf,森の召喚術:tr,光の巡礼者:an,聖なる光脈:sn,死の使者:sk,魔界の召喚:cf,烈火の守護者:sh,蘇る炎の巨兵:fl,大海の守護者:sh,潮風の幻術師:ey,不屈の巨木:tr,芽吹きの園:lf,聖域の番人:sh,朝を告げる者:sn,追い詰められた狂戦士:sw,墓荒らし:cf,炎の連唱:bo,戦場の狂犬:cl,知識の探求:bk,水鏡の双子:wv,緑の贄:lf,森の賢獣:tr,光の探求者:an,勝利の聖剣士:sw,血の供物:cf,屍喰らいの魔獣:cl,焦龍帝ガイアス:dr,怒涛の進撃:bo,氷河の呪縛:st,知恵の泉:wv,大樹の砂:tr,野生の封鎖:cl,白き城壁の主:tw,聖なる柷:sn,呪詛の死神:sk,虚空の鎖:cf,炎の再燃:fl,灼熱の徴税官:cr,時の大魔法:hg,手札の洗濯:wv,森の再生:lf,森の徴税者:cl,聖なる入替:sn,天の采配:st,虚無の徴税官:sk,破滅の手札交換:cf,紅蓮の将軍:cr,業火の特攻兵:bo,再演の魔術師:bk,潮の司祭:wv,成長する若木:tr,森の長老:lf,貫く聖槍兵:ar,輝きの転生:an,怨念の亡霊:sk,闇の破城槌:cr'.split(',').map(s=>s.split(':')));
+const M={
+fl:`<path d='M0-20C8-10 14-4 12 6 10 14 4 18 0 18-6 18-12 14-12 6-12-2-4-6 0-20Z'/><path d='M0-4C4 2 6 6 3 10 1 12-3 12-4 8-5 4-2 2 0-4Z' style='fill:var(--d);opacity:.45'/>`,
+wv:`<path d='M-20 2Q-15-6-10 2T0 2T10 2T20 2V12H-20Z'/><path d='M-20-10Q-15-18-10-10T0-10T10-10T20-10V-4H-20Z' opacity='.7'/>`,
+lf:`<path d='M-14 14C-14-6 0-16 16-16 16 0 6 14-14 14Z'/><path d='M-14 14L8-8' stroke='#000' stroke-opacity='.35' stroke-width='2'/>`,
+sn:`<circle r='9'/><path d='M0-20V-13M0 13V20M-20 0H-13M13 0H20M-14-14L-9-9M9 9L14 14M-14 14L-9 9M9-9L14-14' stroke='#fff' stroke-width='3' stroke-linecap='round'/>`,
+sk:`<path d='M-14 0C-14-14 14-14 14 0 14 6 10 8 10 14H-10C-10 8-14 6-14 0Z'/><circle cx='-6' r='3.5' style='fill:var(--d)'/><circle cx='6' r='3.5' style='fill:var(--d)'/>`,
+sw:`<path d='M14-18L19-19 18-14 0 6-5 1Z'/><path d='M-8 3L3 14M-6 8L-14 16' stroke='#fff' stroke-width='3.5' stroke-linecap='round'/>`,
+sh:`<path d='M0-18L16-12V2C16 12 6 17 0 20-6 17-16 12-16 2V-12Z'/><path d='M0-10V12M-8-2H8' stroke-width='2.5' style='stroke:var(--d)'/>`,
+dr:`<path d='M-18 8C-12-12 4-18 18-14 12-10 12-6 16-2 10-4 8 0 10 6 4 2 0 4 2 12-6 6-12 6-18 8Z'/>`,
+ey:`<path d='M-20 0Q0-18 20 0Q0 18-20 0Z'/><circle r='6' style='fill:var(--d)'/><circle cx='2' cy='-2' r='2'/>`,
+st:`<path d='M0-18L5-6 18-5 8 4 11 17 0 10-11 17-8 4-18-5-5-6Z'/>`,
+tw:`<path d='M-12 18V-6H-8V-12H-4V-6H4V-12H8V-6H12V18Z'/><path d='M-3 18V8A3 3 0 0 1 3 8V18Z' style='fill:var(--d)'/>`,
+cl:`<path d='M-12-16L-4 16M-2-18L6 14M8-16L16 12' stroke='#fff' stroke-width='4' stroke-linecap='round' fill='none'/>`,
+or:`<circle r='11'/><circle cx='-4' cy='-4' r='3' style='fill:var(--d);opacity:.4'/><path d='M-16 16H16' stroke='#fff' stroke-width='3' stroke-linecap='round'/>`,
+bo:`<path d='M4-20L-10 2H-1L-6 20 12-4H3Z'/>`,
+sp:`<path d='M0 0a2 2 0 0 1 4 0 5 5 0 0 1-10 0 9 9 0 0 1 18 0 13 13 0 0 1-26 0' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round'/>`,
+tr:`<path d='M0-18L12 0H5L14 10H3V18H-3V10H-14L-5 0H-12Z'/>`,
+jf:`<path d='M-14 2A14 14 0 0 1 14 2Z'/><path d='M-10 4V16M-4 4V18M2 4V16M8 4V18' stroke='#fff' stroke-width='2.5' stroke-linecap='round' fill='none'/>`,
+an:`<path d='M-2 18C-14 14-20 0-18-14-10-8-6-8 0-12 0-4-2 6 6 10 2 14 0 16-2 18Z'/><path d='M2 18C14 14 20 0 18-14 10-8 6-8 0-12' opacity='.6'/>`,
+cr:`<path d='M-16 12L-18-8-8 0 0-14 8 0 18-8 16 12Z'/>`,
+ar:`<path d='M-18 16L14-16M14-16L6-15M14-16L13-8' stroke='#fff' stroke-width='3' stroke-linecap='round' fill='none'/><path d='M-10-12Q12 0 0 16' stroke='#fff' stroke-width='2.5' fill='none'/>`,
+cf:`<path d='M-4-18H4V-8H14V0H4V18H-4V0H-14V-8H-4Z'/>`,
+hg:`<path d='M-10-16H10L2 0 10 16H-10L-2 0Z'/>`,
+bk:`<path d='M-16-12H-2Q0-10 0-8V14Q-2 12-4 12H-16ZM16-12H2Q0-10 0-8V14Q2 12 4 12H16Z'/>`};
+function art(c){const k=AM[c.name]||'st',h=[...c.name].reduce((a,x)=>(a*31+x.charCodeAt(0))|0,7),P=PAL[c.civ],rt=(h%31)-15,mr=h%2?-1:1,s=Math.min(1.15,.75+c.cost*.05)*(c.type=='s'?.9:1);
+ const dots=[0,1,2].map(i=>`<circle cx='${8+((h>>(i*3))&63)}' cy='${6+((h>>(i*2+1))&31)}' r='${.8+(i%2)}' fill='#fff' opacity='.5'/>`).join('');
+ return `<svg class='art' viewBox='0 0 80 48' style='--d:${P[0]}'><rect width='80' height='48' fill='${P[0]}'/><circle cx='40' cy='54' r='38' fill='${P[1]}' opacity='.6'/><circle cx='40' cy='26' r='20' fill='${P[1]}' opacity='.3'/>${dots}${rar(c)=='SR'?"<circle cx='40' cy='26' r='22' fill='none' stroke='#f0c040' stroke-width='1.5'/>":''}<g fill='#fff' transform='translate(40 26) rotate(${rt}) scale(${mr*s} ${s})'>${M[k]}</g></svg>`}
+const cardEl=c=>`<div class="card ${c.civ} q${rar(c)}${c.tapped?' tap':''}${seen.has(c.id)?'':' in'}${sel&&sel.id==c.id?' sel':''}" data-id="${c.id}" data-r="${rar(c)}"><i>${c.cost}</i><b>${c.name}</b>${art(c)}<em>${tags(c)} ${fxText(c)}</em><s>${c.type=='c'?c.pow:'呪文'}</s></div>`;
+const zone=(cs,z)=>`<div class="zone${z=='h'?' hand':''}" data-z="${z}">${cs.map(cardEl).join('')||'<span class="empty">なし</span>'}</div>`;
+const info=(p,n,h)=>`<div class="bar"><span>${n}　山札${p.deck.length} / ${h?'手札'+p.hand.length+' / ':''}墓地${p.gy.length}</span><span class="row sh">${'<u></u>'.repeat(p.shields.length)}</span></div><div class="row mn">${p.mana.map(m=>`<u class="${m.civ}${m.tapped?' t':''}"></u>`).join('')||'<small>マナなし</small>'}</div>`;
+function canPay(p,c){const u=p.mana.filter(m=>!m.tapped);return u.length>=cs(p,c)&&u.some(m=>m.civ==c.civ)&&(!c.fl.includes('e')||evo(p,c).length>0)}
+const evo=(p,c)=>p.bz.filter(x=>x.civ==c.civ&&(EV[c.name]=='*'||RACE[x.name]==EV[c.name]));
+function pay(p,c){const u=p.mana.filter(m=>!m.tapped);u.find(m=>m.civ==c.civ).tapped=true;let n=cs(p,c)-1;for(const m of u){if(n<=0)break;if(!m.tapped){m.tapped=true;n--}}}
+function bar(){const me=G.p[0];let h='';if(G.t)return'<small>相手のターン…</small>';
+ if(sel&&sel.k=='h'){const c=me.hand.find(x=>x.id==sel.id);if(c){if(!me.charged)h+='<button id="ch">マナに置く</button>';h+=canPay(me,c)?`<button id="sm">${c.type=='c'?'召喚':'唱える'}</button>`:'<small>'+(c.fl.includes('e')&&!evo(me,c).length?'進化元('+evN(c)+')が場にいません':'マナ不足(同じ文明のマナが1枚必要)')+'</small>'}}
+ else if(sel&&sel.k=='m')h+='<button id="ap">プレイヤーを攻撃</button><small>またはタップ中の相手を選択</small>';
+ else h+='<small>手札を選んでマナチャージ・召喚。召喚したターンは攻撃できません</small>';
+ return h+'<button id="end">ターン終了</button>'}
+function render(){const [me,op]=G.p;$('#app').innerHTML=info(op,'相手',1)+zone(op.bz,'o')+`<div id="log">${logs.join('<br>')}</div>`+zone(me.bz,'m')+info(me,'あなた',0)+`<div class="act">${bar()}</div>`+zone(me.hand,'h');
+ const h=$('.zone.hand');if(h&&G.hs)h.scrollLeft=G.hs;G.p.forEach(p=>[...p.hand,...p.bz,...p.mana].forEach(c=>seen.add(c.id)))}
+function finish(w){G.over=true;const gn=w==0?150:50;addCoins(gn);render();[0,1,2].forEach(k=>setTimeout(()=>sfx(w==0?440+k*180:330-k*60,.25,'triangle'),k*200));ask(w==0?'あなたの勝ち！':'あなたの負け…',['もう一度遊ぶ'],`コイン+${gn}`).then(start)}
+function draw(i,n){for(;n>0;n--){const p=G.p[i];if(!p.deck.length){finish(1-i);return}p.hand.push(p.deck.pop())}}
+function destroy(o,c){const p=G.p[o];p.bz=p.bz.filter(x=>x!==c);c.tapped=false;if(c.bf){c.pow-=c.bf;c.bf=0}p.gy.push(c,...(c.under||[]));c.under=[];if(c.fl.includes('r')){p.gy=p.gy.filter(x=>x!==c);p.hand.push(c);log(`「${c.name}」が手札に戻った`)}if(c.gw){c.pow-=c.gw;c.gw=0}if(c.die)fx(o,c.die);if(c.dk){const q=[...G.p[1-o].bz].filter(x=>x.pow<=c.dk&&!x.fl.includes('i')).sort((a,b)=>b.pow-a.pow)[0];if(q){destroy(1-o,q);log(`「${c.name}」の道連れで「${q.name}」が破壊された`)}}}
+async function pick(i,cs,msg){cs=cs.filter(x=>!(x.fl.includes('i')&&G.p[1-i].bz.includes(x)));if(!cs.length)return null;if(i||cs.length==1)return cs[0];return cs[await ask(msg,cs.map(c=>`${c.name}(${c.pow})`))]}
+async function fx(i,f){if(!f)return;const me=G.p[i],op=G.p[1-i];
+ if(f.sac){const cl=[...me.bz].sort((a,b)=>a.pow-b.pow);if(!cl.length){log('いけにえがいない');return}const t=i?cl[0]:cl[await ask('いけにえにするクリーチャーを選ぶ',cl.map(x=>`${x.name}(${x.pow})`))];destroy(i,t);log(`「${t.name}」を生け贄にした`)}
+ if(f.draw)draw(i,f.draw);
+ if(f.kill){const cs=op.bz.filter(x=>x.pow<=f.kill).sort((a,b)=>b.pow-a.pow);const t=await pick(i,cs,'破壊する相手を選ぶ');if(t){destroy(1-i,t);log(`「${t.name}」が破壊された`)}}
+ if(f.bounce){const t=await pick(i,[...op.bz].sort((a,b)=>b.pow-a.pow),'手札に戻す相手を選ぶ');if(t){op.bz=op.bz.filter(x=>x!==t);t.tapped=false;if(t.bf){t.pow-=t.bf;t.bf=0}if(t.gw){t.pow-=t.gw;t.gw=0}op.hand.push(t,...(t.under||[]));t.under=[];log(`「${t.name}」が手札に戻った`)}}
+ for(let n=f.ramp||0;n>0&&me.deck.length;n--){const m=me.deck.pop();m.tapped=false;me.mana.push(m)}
+ if(f.tap)op.bz.forEach(x=>x.tapped=true);
+ if(f.disc)for(let n=f.disc;n>0&&op.hand.length;n--){const k=Math.random()*op.hand.length|0;op.gy.push(op.hand.splice(k,1)[0])}
+ if(f.mburn)for(let n=f.mburn;n>0&&op.mana.length;n--)op.gy.push(op.mana.pop());
+ if(f.wipe)for(const p of [0,1])for(const x of [...G.p[p].bz])if(x.pow<=f.wipe&&!x.fl.includes('i'))destroy(p,x);
+ if(f.rev){const g=[...me.gy].reverse().find(x=>x.type=='c');if(g){me.gy=me.gy.filter(x=>x!==g);me.hand.push(g)}}
+ if(f.buff)me.bz.forEach(x=>{x.pow+=f.buff;x.bf=(x.bf||0)+f.buff});
+ if(f.untap)me.bz.forEach(x=>x.tapped=false);
+ if(f.rec){const cl=[...me.bz];const t=cl.length?(i?cl.sort((a,b)=>(b.fx?1:0)-(a.fx?1:0)||a.pow-b.pow)[0]:cl[await ask('手札に戻す自分のクリーチャーを選ぶ',cl.map(x=>`${x.name}(${x.pow})`))]):null;if(t){me.bz=me.bz.filter(x=>x!==t);t.tapped=false;if(t.bf){t.pow-=t.bf;t.bf=0}if(t.gw){t.pow-=t.gw;t.gw=0}me.hand.push(t,...(t.under||[]));t.under=[];log(`「${t.name}」を手札に戻した`)}}
+ if(f.refresh)me.mana.forEach(m=>m.tapped=false);
+ if(f.xt)G.xt=i+1;
+ if(f.wheel){const wa=me.hand.length,wb=op.hand.length;me.gy.push(...me.hand);op.gy.push(...op.hand);me.hand=[];op.hand=[];draw(i,wa);draw(1-i,wb);if(G.over)return}
+ if(f.sswap&&me.shields.length&&me.hand.length){const t=i?[...me.hand].sort((a,b)=>a.cost-b.cost)[0]:me.hand[await ask('シールドに置く手札を選ぶ',me.hand.map(x=>`${x.name}(コスト${x.cost})`))];me.hand=me.hand.filter(x=>x!==t);const s=me.shields.shift();me.shields.push(t);me.hand.push(s);log('シールドを入れ替えた')}
+ if(f.nb)G.nb=i+1;
+ if(f.lock){const t=await pick(i,[...op.bz],'動きを止める相手を選ぶ');if(t){t.tapped=true;t.lock=true;log(`「${t.name}」は凍りついた`)}}
+ if(f.loot){draw(i,f.loot);if(G.over)return;if(me.hand.length){const t=i?[...me.hand].sort((a,b)=>b.cost-a.cost)[0]:me.hand[await ask('捨てるカードを選ぶ',me.hand.map(x=>`${x.name}(コスト${x.cost})`))];me.hand=me.hand.filter(x=>x!==t);me.gy.push(t)}}
+ if(f.dig){const tp=[];for(let n=f.dig;n>0&&me.deck.length;n--)tp.push(me.deck.pop());if(tp.length){const t=i?[...tp].sort((a,b)=>b.cost-a.cost)[0]:tp[await ask('手札に加えるカードを選ぶ',tp.map(x=>`${x.name}(コスト${x.cost})`),'残りは墓地へ')];me.hand.push(t);me.gy.push(...tp.filter(x=>x!==t));log('山札から1枚を手札に加えた')}}
+ if(f.reani){const rl=me.gy.filter(x=>x.type=='c'&&x.cost<=f.reani&&!x.fl.includes('e')).sort((a,b)=>b.cost-a.cost);const t=await pick(i,rl,'墓地から出すクリーチャーを選ぶ');if(t){me.gy=me.gy.filter(x=>x!==t);await enter(i,t)}}
+ if(f.mret)for(let n=f.mret;n>0&&me.mana.length>1;n--)me.hand.push(me.mana.pop());
+ if(f.cheat){const cl=me.hand.filter(x=>x.type=='c'&&x.cost<=f.cheat&&!x.fl.includes('e')).sort((a,b)=>b.cost-a.cost);const t=await pick(i,cl,'手札から出すクリーチャーを選ぶ');if(t){me.hand=me.hand.filter(x=>x!==t);await enter(i,t)}}
+ if(f.freeze){const t=await pick(i,op.bz.filter(x=>!x.tapped),'タップする相手を選ぶ');if(t){t.tapped=true;log(`「${t.name}」がタップされた`)}}
+ if(f.killt){const t=await pick(i,op.bz.filter(x=>x.tapped&&x.pow<=f.killt).sort((a,b)=>b.pow-a.pow),'破壊する相手を選ぶ');if(t){destroy(1-i,t);log(`「${t.name}」が破壊された`)}}
+ if(f.steal)for(let n=f.steal;n>0&&op.hand.length;n--){const k=Math.random()*op.hand.length|0;me.hand.push(op.hand.splice(k,1)[0])}
+ if(f.mill)for(let n=f.mill;n>0&&op.deck.length;n--)op.gy.push(op.deck.pop());
+ if(f.weak){op.bz.forEach(x=>{x.pow-=f.weak;x.bf=(x.bf||0)-f.weak});op.bz.filter(x=>x.pow<=0).forEach(x=>{destroy(1-i,x);log(`「${x.name}」が力尽きた`)})}
+ if(f.sbreak&&op.shields.length)await breakSh(i,1-i,Math.min(f.sbreak,op.shields.length));
+ for(let n=f.shield||0;n>0&&me.deck.length;n--)me.shields.push(me.deck.pop())}
+async function enter(i,c,s){const me=G.p[i];sfx(c.type=='c'?520:760,.12,'triangle');log(`${who(i)}が「${c.name}」を${c.type=='c'?'出した':'唱えた'}`);
+ if(c.type=='c'){c.sick=!c.fl.includes('h');c.tapped=false;if(s){me.bz=me.bz.filter(x=>x!==s);c.under=[...(s.under||[]),s];s.under=[];c.sick=s.sick;c.tapped=s.tapped}me.bz.push(c);await fx(i,c.fx)}else{await fx(i,c.fx);if(c.fl.includes('w'))await fx(i,c.fx);if(c.fl.includes('m')){c.tapped=false;me.mana.push(c)}else me.gy.push(c)}}
+async function breakSh(a,d,n){const D=G.p[d];for(let k=0;k<n&&!G.over;k++){const sv=D.bz.find(x=>x.fl.includes('v'));if(sv&&D.shields.length){destroy(d,sv);log(`「${sv.name}」が身代わりになった`);render();await wait(400);continue}const s=D.shields.pop();if(!s)break;log(`${who(d)}のシールドをブレイク！`);sfx(180,.25,'sawtooth',.07);render();hit(d);await wait(350);
+ if(s.fl.includes('s')&&!G.nt){const use=d==1||await ask(`シールド・トリガー！「${s.name}」を使う？`,['使う','手札に加える'],fxText(s))==0;if(use){await enter(d,s);render();await wait(500);continue}}
+ D.hand.push(s)}}
+async function eot(i){for(const c of [...G.p[i].bz])if(c.eot&&!G.over&&G.p[i].bz.includes(c)){await fx(i,c.eot);render();await wait(400)}}
+function dyn(c,o){const au=G.p[o].bz.reduce((a,x)=>a+(x!==c&&x.aura?x.aura:0),0);const s=c.sc;if(!s)return au;const p=G.p[o];return au+(s.k=='bz'?Math.max(0,p.bz.length-1)*s.v:s.k=='low'?Math.max(0,5-p.shields.length)*s.v:s.k=='sh'?p.shields.length*s.v:s.k=='hand'?Math.max(0,5-p.hand.length)*s.v:Math.floor(p.gy.length/2)*s.v)}
+const cs=(p,c)=>Math.max(1,c.cost-(c.type=='c'?p.bz.reduce((a,x)=>a+(x.cr||0),0):0)+(c.type=='s'?(G.p[0]===p?G.p[1]:G.p[0]).bz.reduce((a,x)=>a+(x.tx||0),0):0));
+async function bt(c,t,a){const bc=(c.pa||0)+dyn(c,a),bd=dyn(t,1-a);c.pow+=bc;t.pow+=bd;battle(c,t,a);c.pow-=bc;t.pow-=bd;if(c.winfx&&G.p[a].bz.includes(c)&&!G.p[1-a].bz.includes(t))await fx(a,c.winfx)}
+function battle(c,t,a){sfx(120,.18);log(`「${c.name}」と「${t.name}」が戦闘`);const cd=c.pow<=t.pow,td=c.pow>=t.pow;if(td)destroy(1-a,t);if(cd)destroy(a,c);if(cd&&!td&&c.fl.includes('k'))destroy(1-a,t);if(td&&!cd&&t.fl.includes('k'))destroy(a,c)}
+async function attack(a,c,t){const D=G.p[1-a];c.tapped=true;if(c.atk){await fx(a,c.atk);render()}
+ if(t==='p'){const bl=c.fl.includes('u')||G.nb==a+1?[]:D.bz.filter(x=>!x.tapped&&x.fl.includes('b'));let blk=null;
+  if(bl.length){if(1-a==0){const r=await ask(`「${c.name}」(${c.pow})が攻撃！`,[...bl.map(x=>`${x.name}(${x.pow})でブロック`),'ブロックしない']);blk=bl[r]||null}
+   else blk=diff==0?(Math.random()<.3?bl[0]:null):bl.find(x=>x.pow>c.pow||(x.fl.includes('k')&&x.pow>=c.pow-1000))||bl.find(x=>x.pow==c.pow&&x.cost<=c.cost)||(D.shields.length<=2?[...bl].sort((a,b)=>a.pow-b.pow)[0]:null)}
+  if(blk){blk.tapped=true;if(blk.blkfx)await fx(1-a,blk.blkfx);log(`${who(1-a)}の「${blk.name}」がブロック！`);await bt(c,blk,a)}
+  else if(!D.shields.length){finish(a);return}
+  else G.nt=c.fl.includes('n');await breakSh(a,1-a,c.fl.includes('q')?4:c.fl.includes('t')?3:c.fl.includes('d')?2:1);G.nt=false}
+ else await bt(c,t,a);if(c.fl.includes('2')&&!c.did2&&G.p[a].bz.includes(c)){c.did2=true;c.tapped=false;log(`「${c.name}」は再び動ける！`)}
+ sel=null;render()}
+async function startTurn(i){const me=G.p[i];G.t=i;G.nb=0;me.mana.forEach(m=>m.tapped=false);me.bz.forEach(c=>{if(c.lock)c.lock=false;else c.tapped=false;c.sick=false;c.did2=false;if(c.bf){c.pow-=c.bf;c.bf=0}});me.charged=false;sel=null;
+ if(!G.first)draw(i,1);G.first=false;if(G.over)return;for(const c of [...me.bz])if(c.sot&&!G.over){await fx(i,c.sot);if(c.sot.grow){c.pow+=c.sot.grow;c.gw=(c.gw||0)+c.sot.grow;log(`「${c.name}」が成長した`)}}if(G.over)return;log(`── ${who(i)}のターン ──`);render();
+ if(i){busy=true;await cpu();if(!G.over)await eot(1);busy=false;const nx=G.xt==2?1:0;G.xt=0;if(!G.over)startTurn(nx)}}
+async function cpu(){if(diff==0)return cpuEasy();const me=G.p[1],op=G.p[0];await wait(600);
+ const worth=c=>{const f=c.fx;if(!f||c.type!='s')return true;return(!f.kill||op.bz.some(x=>x.pow<=f.kill))&&(!f.bounce||op.bz.length>0)&&(!f.tap||op.bz.some(x=>!x.tapped))&&(!f.disc||op.hand.length>0)&&(!f.wipe||op.bz.filter(x=>x.pow<=f.wipe).length>me.bz.filter(x=>x.pow<=f.wipe).length)&&(!f.rev||me.gy.some(x=>x.type=='c'))&&(!f.sbreak||op.shields.length>0)&&(!f.buff||me.bz.length>0)&&(!f.untap||me.bz.some(x=>x.tapped))&&(!f.steal||op.hand.length>0)&&(!f.mill||op.deck.length>6)&&(!f.weak||op.bz.length>0)&&(!f.freeze||op.bz.some(x=>!x.tapped))&&(!f.killt||op.bz.some(x=>x.tapped&&x.pow<=f.killt))&&(!f.rec||me.bz.some(x=>x.fx))&&(!f.refresh||me.mana.filter(m=>m.tapped).length>=3)&&(!f.wheel||me.hand.length<=2)&&(!f.sswap||(me.hand.length>1&&me.shields.length>0))&&(!f.lock||op.bz.length>0)&&(!f.nb||me.bz.some(x=>!x.tapped&&!x.sick))&&(!f.loot||me.hand.length>0)&&(!f.sac||me.bz.length>0)&&(!f.dig||me.deck.length>3)&&(!f.reani||me.gy.some(x=>x.type=='c'&&x.cost<=f.reani&&!x.fl.includes('e')))&&(!f.mret||me.mana.length>3)&&(!f.cheat||me.hand.some(x=>x.type=='c'&&x.cost<=f.cheat&&!x.fl.includes('e')))};
+ const keep=c=>{let s=(c.cost<=me.mana.length+1?6:0)+(c.type=='c'?1:0)-c.cost*.2;const has=me.mana.some(m=>m.civ==c.civ);if(!has&&me.hand.some(x=>x!==c&&x.civ==c.civ))s-=5;if(!has&&me.mana.length<3)s-=2;return s};
+ if(me.hand.length&&me.mana.length<10&&(me.hand.length>1||me.mana.length<4)){const c=[...me.hand].sort((a,b)=>keep(a)-keep(b))[0];me.hand=me.hand.filter(x=>x!==c);c.tapped=false;me.mana.push(c);log('相手がマナを置いた');render();await wait(500)}
+ for(;;){const pl=me.hand.filter(c=>canPay(me,c)&&worth(c)).sort((a,b)=>b.cost-a.cost)[0];if(!pl||G.over)break;pay(me,pl);me.hand=me.hand.filter(x=>x!==pl);await enter(1,pl,pl.fl.includes('e')?evo(me,pl).sort((a,b)=>a.pow-b.pow)[0]:null);render();await wait(650)}
+ for(const c of [...me.bz].filter(c=>!c.tapped&&!c.sick).sort((a,b)=>b.pow-a.pow)){if(G.over)return;if(c.tapped||!me.bz.includes(c))continue;
+  const tg=op.bz.filter(x=>x.tapped&&!x.fl.includes('z')&&(x.pow<c.pow||(x.pow==c.pow&&x.cost>=c.cost))).sort((a,b)=>b.pow-a.pow)[0];
+  const bl=op.bz.filter(x=>!x.tapped&&x.fl.includes('b'));
+  const safe=c.fl.includes('u')||!bl.length||bl.every(x=>x.pow<c.pow&&!x.fl.includes('k'));
+  const lethal=!op.shields.length&&(!bl.length||c.fl.includes('u'));
+  if(tg&&!lethal)await attack(1,c,tg);
+  else if(lethal||(safe&&(!c.fl.includes('b')||op.shields.length<=2))||(op.shields.length<=1&&bl.length<2))await attack(1,c,'p');
+  render();await wait(600)}}
+async function cpuEasy(){const me=G.p[1],op=G.p[0];await wait(600);
+ if(me.hand.length&&me.mana.length<10){const c=me.hand[Math.random()*me.hand.length|0];me.hand=me.hand.filter(x=>x!==c);c.tapped=false;me.mana.push(c);log('相手がマナを置いた');render();await wait(500)}
+ for(let g=0;g<6;g++){const pl=shuffle(me.hand.filter(c=>canPay(me,c)))[0];if(!pl||G.over)break;pay(me,pl);me.hand=me.hand.filter(x=>x!==pl);await enter(1,pl,pl.fl.includes('e')?evo(me,pl)[0]:null);render();await wait(650)}
+ for(const c of [...me.bz]){if(G.over)return;if(c.tapped||c.sick||!me.bz.includes(c)||Math.random()<.4)continue;const t=op.bz.filter(x=>x.tapped&&!x.fl.includes('z'))[0];await attack(1,c,t&&Math.random()<.5?t:'p');render();await wait(600)}}
+async function cpuOld(){const me=G.p[1],op=G.p[0];await wait(600);
+ if(me.hand.length&&me.mana.length<9){const c=[...me.hand].sort((a,b)=>b.cost-a.cost)[0];me.hand=me.hand.filter(x=>x!==c);c.tapped=false;me.mana.push(c);log('相手がマナを置いた');render();await wait(500)}
+ for(;;){const pl=me.hand.filter(c=>canPay(me,c)).sort((a,b)=>b.cost-a.cost)[0];if(!pl||G.over)break;pay(me,pl);me.hand=me.hand.filter(x=>x!==pl);await enter(1,pl,pl.fl.includes('e')?evo(me,pl).sort((a,b)=>a.pow-b.pow)[0]:null);render();await wait(650)}
+ for(const c of [...me.bz]){if(G.over)return;if(c.tapped||c.sick||!me.bz.includes(c))continue;
+  const t=op.bz.filter(x=>x.tapped&&x.pow<c.pow).sort((a,b)=>b.pow-a.pow)[0];
+  if(t)await attack(1,c,t);
+  else if(!op.shields.length||!op.bz.some(x=>!x.tapped&&x.fl.includes('b'))||Math.random()<.5)await attack(1,c,'p');
+  render();await wait(600)}}
+$('#app').onclick=async e=>{if(busy||G.over||G.t)return;const me=G.p[0],hz=$('.zone.hand');if(hz)G.hs=hz.scrollLeft;const b=e.target.closest('button');
+ if(b){const c=sel&&(me.hand.find(x=>x.id==sel.id)||me.bz.find(x=>x.id==sel.id));
+  if(b.id=='ch'){me.hand=me.hand.filter(x=>x!==c);c.tapped=false;me.mana.push(c);me.charged=true;sel=null}
+  else if(b.id=='sm'){let s=null;if(c.fl.includes('e')){const ev=evo(me,c);s=ev[ev.length>1?await ask('進化元を選ぶ',ev.map(x=>`${x.name}(${x.pow})`)):0]}pay(me,c);me.hand=me.hand.filter(x=>x!==c);busy=true;await enter(0,c,s);busy=false;sel=null}
+  else if(b.id=='ap'){busy=true;await attack(0,c,'p');busy=false}
+  else if(b.id=='end'){busy=true;await eot(0);busy=false;const nx=G.xt==1?0:1;G.xt=0;startTurn(nx);return}
+  render();return}
+ const el=e.target.closest('.card');if(!el)return;const z=el.parentElement.dataset.z,id=+el.dataset.id;
+ if(z=='h')sel={k:'h',id};
+ else if(z=='m'){const c=me.bz.find(x=>x.id==id);if(c&&!c.tapped&&!c.sick)sel={k:'m',id};else log('そのクリーチャーは攻撃できません')}
+ else if(z=='o'&&sel&&sel.k=='m'){const t=G.p[1].bz.find(x=>x.id==id);if(t&&t.tapped&&!t.fl.includes('z')){busy=true;await attack(0,me.bz.find(x=>x.id==sel.id),t);busy=false}else log('タップ中のクリーチャーだけ攻撃できます')}
+ render()};
+function build(){return new Promise(res=>{let cnt=RAW.map(()=>0);try{const s=JSON.parse(localStorage.getItem('deck')||'null');if(s)cnt=RAW.map((_,i)=>s[i]||0)}catch(e){}cnt=cnt.map((x,i)=>Math.min(x,4,own[i]));
+ const m=$('#modal'),box=m.firstElementChild;box.style.maxHeight='88vh';box.style.overflow='auto';
+ const paint=()=>{const st=box.scrollTop,n=cnt.reduce((a,b)=>a+b,0);
+  box.innerHTML=`<h2>デッキ構築(${n}/40枚)</h2><p>所持している分だけ入れられます（同じカード4枚まで。ガチャで増やせます）。前回のデッキは自動で保存されます。</p>`+RAW.map((c,i)=>`<div class="row ${c.civ}" style="justify-content:space-between;border-left:6px solid var(--c);padding-left:6px${own[i]?'':';opacity:.35'}"><span style='width:56px;flex:none;margin-right:6px'>${art(c)}</span><span style="font-size:12px;flex:1">${rar(c)} ${CN[c.civ]} ${c.cost} ${c.name}<br><small>${c.type=='c'?'パワー'+c.pow+' ':'呪文 '}${tags(c)} ${fxText(c)}</small></span><span class="row"><button data-i="${i}" data-d="-1">−</button><b>${cnt[i]}</b><small>/${own[i]}</small><button data-i="${i}" data-d="1">＋</button></span></div>`).join('')+`<button data-ok="1" style="position:sticky;bottom:0" ${n==40?'':'disabled'}>${n==40?'この40枚で対戦':'あと'+(40-n)+'枚'}</button>`;box.scrollTop=st};
+ box.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.ok){try{localStorage.setItem('deck',JSON.stringify(cnt))}catch(x){}box.style.maxHeight='';box.style.overflow='';m.style.display='none';res(cnt);return}
+  const i=+b.dataset.i,d=+b.dataset.d,n=cnt.reduce((a,b)=>a+b,0);if(d>0&&(cnt[i]>=Math.min(4,own[i])||n>=40))return;if(d<0&&cnt[i]<=0)return;cnt[i]+=d;paint()};
+ m.style.display='flex';paint()})}
+function collection(){return new Promise(res=>{const m=$('#modal'),box=m.firstElementChild;let f='';box.style.maxHeight='88vh';box.style.overflow='auto';
+ const paint=()=>{const st=box.scrollTop,got=own.filter(x=>x>0).length;
+  box.innerHTML=`<h2>カード図鑑（${got}/${RAW.length}種）</h2><div class="row">`+['',...Object.keys(CN)].map(k=>`<button data-f="${k}" style="padding:5px 9px;font-size:12px${f==k?'':';opacity:.45'}">${k?CN[k]:'全て'}</button>`).join('')+'</div>'+RAW.map((c,i)=>[c,i]).filter(([c])=>!f||c.civ==f).sort((a,b)=>b[0].cost-a[0].cost).map(([c,i])=>`<div class="row ${c.civ}" style="border-left:6px solid var(--c);padding-left:6px${own[i]?'':';opacity:.35'}"><span style='width:56px;flex:none;margin-right:6px${own[i]?'':';filter:grayscale(1) brightness(.5)'}'>${art(c)}</span><span style="font-size:12px"><b style="${rar(c)=='SR'?'color:#b8860b':''}">${rar(c)}</b> ${CN[c.civ]} ${c.cost} ${own[i]?c.name+' ×'+own[i]:'？？？'}<br><small>${own[i]?(c.type=='c'?'パワー'+c.pow+' ':'呪文 ')+tags(c)+' '+fxText(c):'未入手'}</small></span></div>`).join('')+'<button data-x="1" style="position:sticky;bottom:0">戻る</button>';box.scrollTop=st};
+ box.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.x){box.style.maxHeight='';box.style.overflow='';m.style.display='none';res();return}f=b.dataset.f;paint()};
+ m.style.display='flex';paint()})}
+async function start(){init();const names=[...PAIRS.map(p=>p.map(c=>CN[c]).join('×')),'自分でデッキを組む','カードガチャ','カード図鑑'];const k=await ask('デッキを選ぶ',names,'所持コイン '+coins+'。プリセットは全カード使えます。自作デッキは所持カードのみ。相手はランダムです。');
+ if(k==PAIRS.length+2){await collection();return start()}if(k==PAIRS.length+1){await gacha();return start()}const cu=k==PAIRS.length?await build():null;const o=PAIRS.filter((_,i)=>i!=k);const ok=await ask('相手のデッキ',['ランダム',...names.slice(0,PAIRS.length)]);diff=await ask('CPUの強さ',['かんたん（シールド4枚・ミス多め）','ふつう','つよい（シールド6枚）']);G={p:[cu?mkP(null,cu):mkP(PAIRS[k]),mkP(ok==0?o[Math.random()*o.length|0]:PAIRS[ok-1])],t:0,first:true,over:false,hs:0};if(diff==0)G.p[1].deck.unshift(G.p[1].shields.pop());if(diff==2)G.p[1].shields.push(G.p[1].deck.pop());logs=[];busy=false;sel=null;startTurn(0)}
+start();
+</script></body></html>
