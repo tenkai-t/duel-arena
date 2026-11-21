@@ -131,6 +131,7 @@ const RAW=[
 const PAIRS=[['r','g'],['b','y'],['p','r'],['g','b'],['y','p']];
 let G,busy=false,sel=null,logs=[],uid=0,seen=new Set(),snd=true,AC,own,coins,diff=1;
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const VER='1.0';try{fetch(location.href.split('?')[0],{cache:'no-store'}).then(r=>r.text()).then(tx=>{const mm=tx.match(/const VER='([\d.]+)'/);if(mm&&mm[1]!=VER&&!sessionStorage.getItem('da_reloaded')){sessionStorage.setItem('da_reloaded','1');location.replace(location.href.split('?')[0]+'?v='+mm[1])}}).catch(()=>{})}catch(e){}
 function init(){own=LS.get('col',null);if(own&&own.length<RAW.length){own=[...own,...Array(RAW.length-own.length).fill(0)];LS.set('col',own)}if(!own||own.length!=RAW.length){own=RAW.map(()=>0);for(let n=0;n<20;n++)own[Math.random()*RAW.length|0]++;LS.set('col',own)}coins=LS.get('coins',1000)}
 function addCoins(n){coins+=n;LS.set('coins',coins)}
 const rar=c=>c.cost>=6?'SR':c.cost>=4?'R':c.cost==3?'U':'C';
@@ -314,19 +315,46 @@ $('#app').onclick=async e=>{if(busy||G.over||G.t)return;const me=G.p[0],hz=$('.z
  else if(z=='o'&&sel&&sel.k=='m'){const t=G.p[1].bz.find(x=>x.id==id);if(t&&t.tapped&&!t.fl.includes('z')){busy=true;await attack(0,me.bz.find(x=>x.id==sel.id),t);busy=false}else log('タップ中のクリーチャーだけ攻撃できます')}
  render()};
 function build(){return new Promise(res=>{let cnt=RAW.map(()=>0);try{const s=JSON.parse(localStorage.getItem('deck')||'null');if(s)cnt=RAW.map((_,i)=>s[i]||0)}catch(e){}cnt=cnt.map((x,i)=>Math.min(x,4,own[i]));
- const m=$('#modal'),box=m.firstElementChild;box.style.maxHeight='88vh';box.style.overflow='auto';
- const paint=()=>{const st=box.scrollTop,n=cnt.reduce((a,b)=>a+b,0);
-  box.innerHTML=`<h2>デッキ構築(${n}/40枚)</h2><p>所持している分だけ入れられます（同じカード4枚まで。ガチャで増やせます）。前回のデッキは自動で保存されます。</p>`+RAW.map((c,i)=>`<div class="row ${c.civ}" style="justify-content:space-between;border-left:6px solid var(--c);padding-left:6px${own[i]?'':';opacity:.35'}"><span style='width:56px;flex:none;margin-right:6px'>${art(c)}</span><span style="font-size:12px;flex:1">${rar(c)} ${CN[c.civ]} ${c.cost} ${c.name}<br><small>${c.type=='c'?'パワー'+c.pow+' ':'呪文 '}${tags(c)} ${fxText(c)}</small></span><span class="row"><button data-i="${i}" data-d="-1">−</button><b>${cnt[i]}</b><small>/${own[i]}</small><button data-i="${i}" data-d="1">＋</button></span></div>`).join('')+`<button data-ok="1" style="position:sticky;bottom:0" ${n==40?'':'disabled'}>${n==40?'この40枚で対戦':'あと'+(40-n)+'枚'}</button>`;box.scrollTop=st};
+ const m=$('#modal'),box=m.firstElementChild;box.style.maxHeight='88vh';box.style.overflow='auto';let q='',fc='',fco='';
+ const total=()=>cnt.reduce((a,b)=>a+b,0);
+ const match=c=>(!fc||c.civ==fc)&&(!fco||(fco=='8+'?c.cost>=8:c.cost==+fco))&&(!q||c.name.includes(q));
+ const row=(c,i)=>`<div class="row ${c.civ}" style="justify-content:space-between;border-left:6px solid var(--c);padding-left:6px${own[i]?'':';opacity:.35'}"><span style='width:56px;flex:none;margin-right:6px'>${art(c)}</span><span style="font-size:12px;flex:1">${rar(c)} ${CN[c.civ]} ${c.cost} ${c.name}<br><small>${c.type=='c'?'パワー'+c.pow+' ':'呪文 '}${tags(c)} ${fxText(c)}</small></span><span class="row"><button data-i="${i}" data-d="-1">−</button><b>${cnt[i]}</b><small>/${own[i]}</small><button data-i="${i}" data-d="1">＋</button></span></div>`;
+ const paintList=()=>{const st=box.scrollTop;box.querySelector('#blist').innerHTML=RAW.map((c,i)=>[c,i]).filter(([c])=>match(c)).map(([c,i])=>row(c,i)).join('')||'<p style="font-size:12px;color:var(--mut)">条件に合うカードがありません</p>';box.querySelector('#dcnt').textContent=total();const ok=box.querySelector('#bok');ok.disabled=total()!=40;ok.textContent=total()==40?'この40枚で決定':'あと'+(40-total())+'枚';box.scrollTop=st};
+ const close=v=>{box.style.maxHeight='';box.style.overflow='';m.style.display='none';res(v)};
+ box.innerHTML=`<h2>デッキ構築(<span id="dcnt">${total()}</span>/40枚)</h2><p>所持している分だけ入れられます（同じカード4枚まで。ガチャで増やせます）。決めたデッキは自動で保存されます。</p><div class="row"><input id="bq" type="search" placeholder="カード名で検索" style="flex:1;min-width:140px;padding:8px;border-radius:8px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px"></div><div class="row">`+['',...Object.keys(CN)].map(k=>`<button data-fc="${k}" style="padding:5px 9px;font-size:12px">${k?CN[k]:'全文明'}</button>`).join('')+`<select id="bco" style="padding:6px;border-radius:8px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:12px"><option value="">全コスト</option>${[1,2,3,4,5,6,7].map(n=>`<option value="${n}">コスト${n}</option>`).join('')}<option value="8+">コスト8以上</option></select></div><div class="row"><button id="bauto" style="padding:6px 10px;font-size:12px">自動で40枚にする</button><button id="bclear" style="padding:6px 10px;font-size:12px">全部はずす</button><small>自動編成は、所持の多い2文明からコストの低い順に入れます</small></div><div id="blist"></div><div class="row" style="position:sticky;bottom:0"><button id="bok"></button><button id="bcancel">キャンセル</button></div>`;
+ const fcBtns=[...box.querySelectorAll('[data-fc]')];const markFc=()=>fcBtns.forEach(b=>b.style.opacity=b.dataset.fc==fc?'1':'.45');markFc();
+ box.querySelector('#bq').oninput=e=>{q=e.target.value.trim();paintList()};
+ box.querySelector('#bco').onchange=e=>{fco=e.target.value;paintList()};
  box.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
-  if(b.dataset.ok){try{localStorage.setItem('deck',JSON.stringify(cnt))}catch(x){}box.style.maxHeight='';box.style.overflow='';m.style.display='none';res(cnt);return}
-  const i=+b.dataset.i,d=+b.dataset.d,n=cnt.reduce((a,b)=>a+b,0);if(d>0&&(cnt[i]>=Math.min(4,own[i])||n>=40))return;if(d<0&&cnt[i]<=0)return;cnt[i]+=d;paint()};
- m.style.display='flex';paint()})}
+  if(b.id=='bok'){try{localStorage.setItem('deck',JSON.stringify(cnt))}catch(x){}close(cnt);return}
+  if(b.id=='bcancel'){close(null);return}
+  if(b.id=='bclear'){cnt=RAW.map(()=>0);paintList();return}
+  if(b.id=='bauto'){cnt=RAW.map(()=>0);const sc={};Object.keys(CN).forEach(k=>sc[k]=0);RAW.forEach((c,i)=>sc[c.civ]+=own[i]);const pair=Object.keys(CN).sort((a,z)=>sc[z]-sc[a]).slice(0,2);const byCost=(x,y)=>x[0].cost-y[0].cost||y[0].pow-x[0].pow;const fill=pool=>{for(const [c,i] of pool)while(cnt[i]<Math.min(4,own[i])&&total()<40)cnt[i]++};fill(RAW.map((c,i)=>[c,i]).filter(([c,i])=>pair.includes(c.civ)&&own[i]>0).sort(byCost));if(total()<40)fill(RAW.map((c,i)=>[c,i]).filter(([c,i])=>!pair.includes(c.civ)&&own[i]>0).sort(byCost));paintList();return}
+  if(b.hasAttribute('data-fc')){fc=b.dataset.fc;markFc();paintList();return}
+  const i=+b.dataset.i,d=+b.dataset.d,n=total();if(d>0&&(cnt[i]>=Math.min(4,own[i])||n>=40))return;if(d<0&&cnt[i]<=0)return;cnt[i]+=d;paintList()};
+ m.style.display='flex';paintList()})}
 function collection(){return new Promise(res=>{const m=$('#modal'),box=m.firstElementChild;let f='';box.style.maxHeight='88vh';box.style.overflow='auto';
  const paint=()=>{const st=box.scrollTop,got=own.filter(x=>x>0).length;
   box.innerHTML=`<h2>カード図鑑（${got}/${RAW.length}種）</h2><div class="row">`+['',...Object.keys(CN)].map(k=>`<button data-f="${k}" style="padding:5px 9px;font-size:12px${f==k?'':';opacity:.45'}">${k?CN[k]:'全て'}</button>`).join('')+'</div>'+RAW.map((c,i)=>[c,i]).filter(([c])=>!f||c.civ==f).sort((a,b)=>b[0].cost-a[0].cost).map(([c,i])=>`<div class="row ${c.civ}" style="border-left:6px solid var(--c);padding-left:6px${own[i]?'':';opacity:.35'}"><span style='width:56px;flex:none;margin-right:6px${own[i]?'':';filter:grayscale(1) brightness(.5)'}'>${art(c)}</span><span style="font-size:12px"><b style="${rar(c)=='SR'?'color:#b8860b':''}">${rar(c)}</b> ${CN[c.civ]} ${c.cost} ${own[i]?c.name+' ×'+own[i]:'？？？'}<br><small>${own[i]?(c.type=='c'?'パワー'+c.pow+' ':'呪文 ')+tags(c)+' '+fxText(c):'未入手'}</small></span></div>`).join('')+'<button data-x="1" style="position:sticky;bottom:0">戻る</button>';box.scrollTop=st};
  box.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.x){box.style.maxHeight='';box.style.overflow='';m.style.display='none';res();return}f=b.dataset.f;paint()};
  m.style.display='flex';paint()})}
-async function start(){init();const names=[...PAIRS.map(p=>p.map(c=>CN[c]).join('×')),'自分でデッキを組む','カードガチャ','カード図鑑'];const k=await ask('デッキを選ぶ',names,'所持コイン '+coins+'。プリセットは全カード使えます。自作デッキは所持カードのみ。相手はランダムです。');
- if(k==PAIRS.length+2){await collection();return start()}if(k==PAIRS.length+1){await gacha();return start()}const cu=k==PAIRS.length?await build():null;const o=PAIRS.filter((_,i)=>i!=k);const ok=await ask('相手のデッキ',['ランダム',...names.slice(0,PAIRS.length)]);diff=await ask('CPUの強さ',['かんたん（シールド4枚・ミス多め）','ふつう','つよい（シールド6枚）']);G={p:[cu?mkP(null,cu):mkP(PAIRS[k]),mkP(ok==0?o[Math.random()*o.length|0]:PAIRS[ok-1])],t:0,first:true,over:false,hs:0};if(diff==0)G.p[1].deck.unshift(G.p[1].shields.pop());if(diff==2)G.p[1].shields.push(G.p[1].deck.pop());logs=[];busy=false;sel=null;startTurn(0)}
+function saveMenu(){return new Promise(res=>{const m=$('#modal'),box=m.firstElementChild;box.style.maxHeight='';box.style.overflow='';
+ const paint=()=>{box.innerHTML=`<h2>セーブの管理</h2><p>所持カード・コイン・保存デッキをファイルに書き出せます。別の端末では、そのファイルを読み込むと続きから遊べます。</p><button id="exp">ファイルに書き出す</button><button id="imp">ファイルから読み込む</button><button id="bak">戻る</button><input type="file" id="imf" accept=".json,application/json" style="display:none">`;
+  box.querySelector('#imf').onchange=e=>{const file=e.target.files[0];if(!file)return;file.text().then(async tx=>{let d=null;try{d=JSON.parse(tx)}catch(x){}
+   if(!d||!Array.isArray(d.col)||typeof d.coins!='number'){await ask('読み込めませんでした',['OK'],'ファイルが壊れているか、デュエル・アリーナのセーブではありません。');paint();m.style.display='flex';return}
+   if(await ask('読み込みますか？',['読み込む','やめる'],'今の所持カード・コイン・デッキは、ファイルの内容で上書きされます。')!=0){paint();m.style.display='flex';return}
+   own=RAW.map((_,i)=>Math.max(0,d.col[i]|0));coins=d.coins;LS.set('col',own);LS.set('coins',coins);if(Array.isArray(d.deck))localStorage.setItem('deck',JSON.stringify(d.deck));else localStorage.removeItem('deck');await ask('読み込みました',['OK'],'所持カード '+own.filter(x=>x>0).length+'種／コイン '+coins);paint();m.style.display='flex'})};
+  box.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+   if(b.id=='bak'){m.style.display='none';res();return}
+   if(b.id=='exp'){const data={app:'duel-arena',ver:VER,col:own,coins:coins,deck:(()=>{try{return JSON.parse(localStorage.getItem('deck')||'null')}catch(x){return null}})()};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));a.download='duel-arena_save.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);return}
+   if(b.id=='imp')box.querySelector('#imf').click()}};
+ paint();m.style.display='flex'})}
+async function home(){init();const got=own.filter(x=>x>0).length;const k=await ask('デュエル・アリーナ',['対戦する','デッキを組む','カードガチャ','カード図鑑','セーブの書き出し・読み込み'],`Ver ${VER}　所持コイン ${coins}　集めたカード ${got}/${RAW.length}種`);
+ if(k==0)return battle();if(k==1){await build();return home()}if(k==2){await gacha();return home()}if(k==3){await collection();return home()}await saveMenu();return home()}
+async function battle(){init();const names=[...PAIRS.map(p=>p.map(c=>CN[c]).join('×')),'自分でデッキを組む'];let saved=null;try{saved=JSON.parse(localStorage.getItem('deck')||'null')}catch(e){}const hasSaved=!!(saved&&saved.reduce((a,b)=>a+(b||0),0)==40);if(hasSaved)names.push('保存した自作デッキ');
+ const k=await ask('デッキを選ぶ',names,'所持コイン '+coins+'。プリセットは全カード使えます。自作デッキは所持カードのみ。相手はランダムです。');
+ let cu=null;if(k==PAIRS.length){cu=await build();if(!cu)return home()}else if(hasSaved&&k==PAIRS.length+1)cu=saved;
+ const o=PAIRS.filter((_,i)=>i!=k);const ok=await ask('相手のデッキ',['ランダム',...PAIRS.map(p=>p.map(c=>CN[c]).join('×'))]);diff=await ask('CPUの強さ',['かんたん（シールド4枚・ミス多め）','ふつう','つよい（シールド6枚）']);G={p:[cu?mkP(null,cu):mkP(PAIRS[k]),mkP(ok==0?o[Math.random()*o.length|0]:PAIRS[ok-1])],t:0,first:true,over:false,hs:0};if(diff==0)G.p[1].deck.unshift(G.p[1].shields.pop());if(diff==2)G.p[1].shields.push(G.p[1].deck.pop());logs=[];busy=false;sel=null;startTurn(0)}
+function start(){return home()}
 start();
 </script></body></html>
